@@ -52,12 +52,13 @@ class AnalyseHeader(object):
         vul['xframe'] = self.checkXFrame(header)
         vul['xss'] = self.checkXSS(header)
         return vul
+
 """
 a = AnalyseHeader()
 import httplib2
 import json
 h = httplib2.Http(".cache")
-(header, content) = h.request("http://twitter.com/jimmyfallon", "GET")
+(header, content) = h.request("http://github.com", "GET")
 print json.dumps(header, indent=4, sort_keys=True)
 print json.dumps(a.checkURLS(header, content), indent=4, sort_keys=True)
 """
