@@ -92,7 +92,7 @@ def crawl(url, domain, maxurls=100):
         urls.append(url)
         print "-------------------------------"
     print "OUTSIDE LOOP:", len(urls), len(url_database)
-    return list(urls)[:maxurls]
+    return list(urls)[:maxurls+1]
 
 
 def get_page(url):
