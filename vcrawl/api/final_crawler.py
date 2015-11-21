@@ -1,6 +1,7 @@
 from urlparse import urljoin
-from urllib import urlopen
+from urllib2 import urlopen
 from bs4 import BeautifulSoup
+from collections import deque
 import httplib2
 import thread
 import threading
@@ -12,13 +13,13 @@ from AnalyseHeader import AnalyseHeader
 bsoup = None
 crawled_links = 1
 max_crawl = None
-url_database = []
+url_database = set()
 vulData = []
 domain = None
 lock = threading.RLock()
 
 def analyse(thName, urls):
-    h = httplib2.Http(".cache")
+    h = httplib2.Http()
     global vulData
     ans = AnalyseHeader()
     for u in urls:
@@ -48,7 +49,7 @@ def analyseMain(urls):
             last = share*(i+1)
         thread.start_new_thread(analyse, (str((last/share)+1), urls[last:]))
     except Exception as e:
-        print "Exception with starting Threads"
+        print "Exception with starting Threads" + e
         return vulData
     temp = len(vulData)
     while len(vulData) < n:
@@ -72,29 +73,32 @@ def findDomain(url):
     print "WEBSITE", website
     possibleDomain = website[1].split(".")
     n = len(possibleDomain)
-    domain = possibleDomain[n-2]+"."+possibleDomain[n-1]
+    domain = possibleDomain[n-2] + "." + possibleDomain[n-1]
     print "Include Domains:", domain
     return domain
 
 
 def crawl(url, domain, maxurls=100):
     global url_database
+    url_database = {url}
     """Starting from this URL, crawl the web until
     you have collected maxurls URLS, then return them
     as a set"""
-    urls = [url]
-    while(len(url_database) < maxurls):
-        # remove a URL at random
-        url = urls.pop(0)
-        links = get_links2(url, domain)
-        for link in links:
-            urls.append(link)
-    return urls
+    urls = deque([url])
+    while len(urls) < maxurls:
+        print len(urls), len(url_database)
+        url = urls.popleft()
+        urls.extend(get_links2(url, domain))
+        urls.append(url)
+        print "-------------------------------"
+    print "OUTSIDE LOOP:", len(urls), len(url_database)
+    return list(urls)[:maxurls]
 
 
 def get_page(url):
     """Get the text of the web page at the given URL
     return a string containing the content"""
+    print "GetPage:", url
     fd = urlopen(url)
     content = fd.read()
     fd.close()
@@ -104,7 +108,6 @@ def get_links2(url, domain):
     """Scan the text for http URLs and return a set
     of URLs found, without duplicates"""
     global url_database
-    # look for any http URL in the page
     links = []
     text = get_page(url)
     soup = BeautifulSoup(text)
@@ -116,9 +119,7 @@ def get_links2(url, domain):
             # ignore any URL that doesn't now start with http
             if newurl.endswith('/'):
                 newurl = newurl[:-1]
-            if newurl.startswith('http'):
-                if newurl not in url_database:
-                    if domain in newurl:
-                        links.append(newurl)
-                        url_database.append(newurl)
+            if newurl.startswith('http') and newurl not in url_database and domain in newurl:
+                url_database.add(newurl)
+                links.append(newurl)
     return links

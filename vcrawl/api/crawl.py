@@ -25,10 +25,12 @@ def create_crawl():
     path = request.form.get("url")
     page = request.form.get("pages")
     domain = fc.findDomain(path)
-    print "Input to the Crawler:", path, domain, page
     path = fc.getCorrectURL(path)
+    print "Correct PAth is:", path, domain, page
     urls = fc.crawl(path, domain, int(page))
     print "Length of URLS:", len(urls)
+    if len(urls) > int(page):
+        urls = urls[:int(page)]
     out = fc.analyseMain(urls)
     if len(out) == 0:
         response = jsonify(out=out)
