@@ -1,0 +1,10 @@
+{
+  "generator-flask-api": {
+    "appName": "vcrawl",
+    "database": "none",
+    "databaseMapper": "none",
+    "versioningScheme": "none",
+    "currentVersion": "",
+    "urlPrefix": "/api"
+  }
+}
