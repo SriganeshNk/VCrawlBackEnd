@@ -51,15 +51,24 @@ class AnalyseHeader(object):
     def checkXFrame(self, header):
         for each in self.Xframe:
             if each in header:
-                #Probably need to have additional checks, like what kind of XFrame is enabled
-                return True
-        return False
-
+                tmp = header[each].lower()
+                if tmp == 'deny' or tmp == 'sameorigin' or tmp.startswith('allow-from'):
+                    return True
+                else:
+                    return False
+            else:
+                return False 
+               
     def checkXSS(self, header):
         if self.XSS in header:
-            #Probably need to have additional checks, like what kind of XSS is enabled
-            return True
-        return False
+            #if "" in header[self.XSS]:
+            #    return False    
+            if "mode=block" in header[self.XSS]:
+                return "block"
+            elif "1" in header[self.XSS]:
+                return True 
+            else:
+		return False            
 
     def checkCSRF(self, header):
         if self.CSRF in header:
@@ -80,7 +89,6 @@ a = AnalyseHeader()
 import httplib2
 import json
 h = httplib2.Http(".cache")
-(header, content) = h.request("http://twitter.com/jimmyfallon", "GET")
+(header, content) = h.request("http://github.com/integrations/gitter", "GET")
 print json.dumps(header, indent=4, sort_keys=True)
 print json.dumps(a.checkURLS(header, content), indent=4, sort_keys=True)
-
