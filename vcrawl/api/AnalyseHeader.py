@@ -28,10 +28,14 @@ class AnalyseHeader(object):
     def checkXFrame(self, header):
         for each in self.Xframe:
             if each in header:
-                #Probably need to have additional checks, like what kind of XFrame is enabled
-                return True
-        return False
-
+                tmp = header[each].lower()
+                if tmp == 'deny' or tmp == 'sameorigin' or tmp.startswith('allow-from'):
+                    return True
+                else:
+                    return False
+            else:
+                return False 
+               
     def checkXSS(self, header):
         if self.XSS in header:
             #if "" in header[self.XSS]:
