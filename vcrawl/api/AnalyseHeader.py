@@ -29,7 +29,7 @@ class AnalyseHeader(object):
 	return csp_map
 
     def checkHSTS(self, header):
-        hsts_directives = ['max-age', 'includeSubDomains', 'preload']
+        hsts_directives = ['max-age', 'includeSubdomains', 'preload']
 	hsts_map = {'implemented' : False}
 
 	if self.HSTS in header:
@@ -40,6 +40,7 @@ class AnalyseHeader(object):
 		policy_list = policy_string.split(';')
 		for policy in policy_list:
 			policy_strings = policy.strip().split('=')
+			print policy, policy_strings
 			if policy_strings[0] in hsts_directives:
 				if policy_strings[0] == hsts_directives[0]:
 					hsts_map[policy_strings[0]] = policy_strings[1]
@@ -80,11 +81,11 @@ class AnalyseHeader(object):
         '''
 	if self.XSS in header:
             #if "" in header[self.XSS]:
-            #    return False    
+            #    return False
             if "mode=block" in header[self.XSS]:
                 return "block"
             elif "1" in header[self.XSS]:
-                return True 
+                return True
             else:
 		return False            
 	'''
@@ -106,7 +107,7 @@ class AnalyseHeader(object):
 				else:
 					xss_map['mode'] = 'sanitize'
 	return xss_map
-	
+    
     def checkCSRF(self, header):
         if self.CSRF in header:
             #Probably need to have additional checks, like what kind of CSRF is enabled

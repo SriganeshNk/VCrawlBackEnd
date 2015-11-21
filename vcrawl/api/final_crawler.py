@@ -5,6 +5,7 @@ import httplib2
 import thread
 import threading
 import time
+import urllib2
 from AnalyseHeader import AnalyseHeader
 
 
@@ -21,13 +22,16 @@ def analyse(thName, urls):
     global vulData
     ans = AnalyseHeader()
     for u in urls:
-        (resp_headers, content) = h.request(u, "GET")
-        output = {"url": u}
-        output['data'] = ans.checkURLS(resp_headers, content)
-        lock.acquire()
-        vulData.append(output)
-        lock.release()
-
+        try:
+            (resp_headers, content) = h.request(u, "GET")
+            output = {"url": u}
+            output['data'] = ans.checkURLS(resp_headers, content)
+            lock.acquire()
+            vulData.append(output)
+            lock.release()
+        except Exception as e:
+            print "SOME exception", e
+            pass
 
 def analyseMain(urls):
     numThread = 5
@@ -36,20 +40,40 @@ def analyseMain(urls):
     if n >= 1000:
         numThread = 15
     share = n/numThread
+    print share
     last = 0
-    for i in range(0, numThread):
-        thread.start_new_thread(analyse, (str(i), urls[share*i:share*(i+1)]))
-        last = share*(i+1)
-    thread.start_new_thread(analyse, (str((last/share)+1), urls[last:]))
+    try:
+        for i in range(0, numThread):
+            thread.start_new_thread(analyse, (str(i), urls[share*i:share*(i+1)]))
+            last = share*(i+1)
+        thread.start_new_thread(analyse, (str((last/share)+1), urls[last:]))
+    except Exception as e:
+        print "Exception with starting Threads"
+        return vulData
+    temp = len(vulData)
     while len(vulData) < n:
         time.sleep(2) #To make the thread sleep for 2 seconds
+        if temp != len(vulData):
+            temp = len(vulData)
+        else:
+            break
         continue
     return vulData
 
+def getCorrectURL(url):
+    customReq = urllib2.Request(url)
+    customRes = urllib2.urlopen(customReq)
+    path = customRes.geturl()
+    print "RETURNED URL", path
+    return path
+
 def findDomain(url):
-    possibleDomain = url.split(".")
+    website = url.split("//")
+    print "WEBSITE", website
+    possibleDomain = website[1].split(".")
     n = len(possibleDomain)
     domain = possibleDomain[n-2]+"."+possibleDomain[n-1]
+    print "Include Domains:", domain
     return domain
 
 
