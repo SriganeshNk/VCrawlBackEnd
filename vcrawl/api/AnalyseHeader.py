@@ -6,7 +6,7 @@
 
 class AnalyseHeader(object):
     def __init__(self):
-        self.CSP = "content-security-policy"
+        self.CSP = ["content-security-policy", "x-content-security-policy", "x-webkit-csp"]
         self.XFRAME = ["x-frame-options", "frame-options"]
         self.XSS = "x-xss-protection"
         self.CSRF = "nonce"
@@ -16,17 +16,18 @@ class AnalyseHeader(object):
         csp_directives = ['base-uri', 'child-src', 'connect-src', 'default-src', 'font-src', 'form-action', 'frame-ancestors', 'frame-src', 'img-src', 'media-src', 'object-src', 'plugin-types', 'report-uri','script-src', 'style-src', 'upgrade-insecure-requests']
         csp_map = {'implemented' : False}
 
-        if self.CSP in header:
-            csp_map['implemented'] = True
-            for directive in csp_directives:
-                csp_map[directive] = False
-            policy_string = header[self.CSP]
-            policy_list = policy_string.split(';')
-            for policy in policy_list:
-                policy_strings = policy.strip().split(' ')
-                if policy_strings[0] in csp_directives:
-                    csp_map[policy_strings[0]] = True
-        return csp_map
+        for csp in self.CSP:
+            if self.CSP in header:
+                csp_map['implemented'] = True
+                for directive in csp_directives:
+                    csp_map[directive] = False
+                policy_string = header[csp]
+                policy_list = policy_string.split(';')
+                for policy in policy_list:
+                    policy_strings = policy.strip().split(' ')
+                    if policy_strings[0] in csp_directives:
+                        csp_map[policy_strings[0]] = True
+            return csp_map
 
     def checkHSTS(self, header):
         hsts_directives = ['max-age', 'includeSubdomains', 'preload']
@@ -49,17 +50,6 @@ class AnalyseHeader(object):
         return hsts_map
 
     def checkXFrame(self, header):
-        """
-        for each in self.Xframe:
-            if each in header:
-                tmp = header[each].lower()
-                if tmp == 'deny' or tmp == 'sameorigin' or tmp.startswith('allow-from'):
-                    return True
-                else:
-                    return False
-            else:
-                return False
-        """
         xframe_modes = ['deny', 'sameorigin', 'allow-from']
         xframe_map = {'implemented' : False}
 
@@ -78,17 +68,6 @@ class AnalyseHeader(object):
         return xframe_map
 
     def checkXSS(self, header):
-        """
-        if self.XSS in header:
-            #if "" in header[self.XSS]:
-            #    return False
-            if "mode=block" in header[self.XSS]:
-                return "block"
-            elif "1" in header[self.XSS]:
-                return True
-            else:
-		return False
-	    """
         xss_directives = ['mode']
         xss_map = {'implemented' : False}
 
@@ -108,16 +87,28 @@ class AnalyseHeader(object):
                         xss_map['mode'] = 'sanitize'
         return xss_map
 
-    def checkCSRF(self, header):
-        if self.CSRF in header:
-            #Probably need to have additional checks, like what kind of CSRF is enabled
-            return True
+    def checkCSRF(self, header, content):
+        nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce']
+        for each in self.CSP:
+            if each in header:
+                if 'nonce' in header[each]:
+                    return True
+        soup = BeautifulSoup(content, "lxml")
+        for form in soup.find_all('form'):
+            for formAttrs in form.attrs:
+                if 'nonce' in formAttrs:
+                    return True
+            for inputTag in form.find_all('input'):
+                if 'type' in inputTag.attrs and 'hidden' in inputTag.attrs['type']:
+                    if 'name' in inputTag.attrs and inputTag.attrs['name'] in nonce_fields:
+                        return True
         return False
 
-    def checkURLS(self, header, response):
+
+    def checkURLS(self, header, content):
         vul = {}
         vul['csp'] = self.checkCSP(header)
-        vul['csrf'] = self.checkCSRF(header)
+        vul['csrf'] = self.checkCSRF(header, content)
         vul['hsts'] = self.checkHSTS(header)
         vul['xframe'] = self.checkXFrame(header)
         vul['xss'] = self.checkXSS(header)

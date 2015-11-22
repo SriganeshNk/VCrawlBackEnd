@@ -47,6 +47,10 @@ def analyseMain(crawledUrls):
     if n >= 1000:
         numThread = 15
     share = n/numThread
+<<<<<<< HEAD
+    #tList = getThreads(n, numThread, share, crawledUrls)
+=======
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     for i in range(numThread+1):
         start = share*i
         end = share*(i+1) if share*(i+1) < n else n
@@ -58,6 +62,11 @@ def analyseMain(crawledUrls):
             return vulData
         if end >= n:
             break
+<<<<<<< HEAD
+    #for i in tList:
+    #    i.start()
+=======
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     temp = len(vulData)
     while len(vulData) < n:
         time.sleep(2) #To make the thread sleep for 2 seconds
@@ -66,6 +75,11 @@ def analyseMain(crawledUrls):
         else:
             break
         continue
+<<<<<<< HEAD
+    #for i in tList:
+    #    i.join()
+=======
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     return vulData[:n]
 
 
@@ -93,7 +107,12 @@ def findDomain(url):
 
 def crawl(url, domain, maxurls=100):
     global url_database
+<<<<<<< HEAD
+    url_database = set()
+    url_database.add(url)
+=======
     url_database = set([url])
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     """Starting from this URL, crawl the web until
     you have collected maxurls URLS, then return them
     as a set"""
