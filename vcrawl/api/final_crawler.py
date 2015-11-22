@@ -19,7 +19,7 @@ domain = None
 lock = threading.RLock()
 
 def analyse(thName, urls):
-    h = httplib2.Http()
+    h = httplib2.Http(disable_ssl_certificate_validation=True)
     global vulData
     ans = AnalyseHeader()
     for u in urls:
@@ -41,16 +41,17 @@ def analyseMain(urls):
     if n >= 1000:
         numThread = 15
     share = n/numThread
-    print share
-    last = 0
-    try:
-        for i in range(0, numThread):
-            thread.start_new_thread(analyse, (str(i), urls[share*i:share*(i+1)]))
-            last = share*(i+1)
-        thread.start_new_thread(analyse, (str((last/share)+1), urls[last:]))
-    except Exception as e:
-        print "Exception with starting Threads" + e
-        return vulData
+    for i in range(numThread+1):
+        start = share*i
+        end = share*(i+1) if share*(i+1) < n else n
+        try:
+            print "Started Thread", i, start, end
+            thread.start_new_thread(analyse, (str(i), urls[start:end]))
+        except Exception as e:
+            print "Exception with starting Threads" + e
+            return vulData
+        if end >= n:
+            break
     temp = len(vulData)
     while len(vulData) < n:
         time.sleep(2) #To make the thread sleep for 2 seconds
