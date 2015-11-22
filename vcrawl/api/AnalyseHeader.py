@@ -3,8 +3,8 @@
 # Based on the above website information about http headers
 
 # Nonces ---> need to check forms for nonce id's, requires parsing the content and identifying nonceIDS
-from bs4 import BeautifulSoup
 
+from bs4 import BeautifulSoup
 
 class AnalyseHeader(object):
     def __init__(self):
@@ -95,10 +95,13 @@ class AnalyseHeader(object):
         for each in self.CSP:
             if each in header and 'nonce' in header[each]:
                 return True
+            if each in header:
+                if self.CSRF in header[each]:
+                    return True
         soup = BeautifulSoup(content, "lxml")
         for form in soup.find_all('form'):
             for formAttrs in form.attrs:
-                if 'nonce' in formAttrs:
+                if self.CSRF in formAttrs:
                     return True
             for inputTag in form.find_all('input'):
                 if 'type' in inputTag.attrs and 'hidden' in inputTag.attrs['type']:
