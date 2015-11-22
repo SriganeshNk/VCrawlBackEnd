@@ -90,14 +90,10 @@ class AnalyseHeader(object):
         return xss_map
 
     def checkCSRF(self, header, content):
-        #print "csrf"
         nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce']
         for each in self.CSP:
-            if each in header and 'nonce' in header[each]:
+            if each in header and self.CSRF in header[each]:
                 return True
-            if each in header:
-                if self.CSRF in header[each]:
-                    return True
         soup = BeautifulSoup(content, "lxml")
         for form in soup.find_all('form'):
             for formAttrs in form.attrs:
