@@ -2,13 +2,15 @@ from urlparse import urljoin
 from urllib2 import urlopen
 from bs4 import BeautifulSoup
 from collections import deque
-import httplib2
+#import httplib2
+import requests
 import thread
 import threading
 import time
 import urllib2
 from AnalyseHeader import AnalyseHeader
-
+import urllib3.contrib.pyopenssl
+urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 bsoup = None
 crawled_links = 1
@@ -18,15 +20,28 @@ vulData = []
 domain = None
 lock = threading.RLock()
 
+
+class Analyse(threading.Thread):
+    def __init__(self, threadID, name, urls):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.urls = urls
+
+    def run(self):
+        print "Starting ", self.threadID
+        analyse(self.name, self.urls)
+        print "Exiting ", self.threadID
+
 def analyse(thName, urls):
-    h = httplib2.Http(disable_ssl_certificate_validation=True)
+    #h = httplib2.Http(disable_ssl_certificate_validation=True)
     global vulData
     ans = AnalyseHeader()
     for u in urls:
         try:
-            (resp_headers, content) = h.request(u, "GET")
+            r = requests.get(u, verify=True)
             output = {"url": u}
-            output['data'] = ans.checkURLS(resp_headers, content)
+            output['data'] = ans.checkURLS(r.headers, r.text)
             lock.acquire()
             vulData.append(output)
             lock.release()
@@ -34,13 +49,24 @@ def analyse(thName, urls):
             print "SOME exception", e
             pass
 
-def analyseMain(urls):
+def getThreads(n, num, share, urls):
+    threadList = []
+    for i in range(num):
+        start = share*i
+        end = share*(i+1) if share*(i+1) < n else n
+        threadList.append(Analyse(i,str(i), urls[start:end]))
+    return threadList
+
+def analyseMain(crawledUrls):
     numThread = 5
     global vulData
-    n = len(urls)
+    vulData = []
+    n = len(crawledUrls)
     if n >= 1000:
         numThread = 15
     share = n/numThread
+    tList = getThreads(n, numThread, share, crawledUrls)
+    """
     for i in range(numThread+1):
         start = share*i
         end = share*(i+1) if share*(i+1) < n else n
@@ -52,6 +78,9 @@ def analyseMain(urls):
             return vulData
         if end >= n:
             break
+    """
+    for i in tList:
+        i.start()
     temp = len(vulData)
     while len(vulData) < n:
         time.sleep(2) #To make the thread sleep for 2 seconds
@@ -60,7 +89,9 @@ def analyseMain(urls):
         else:
             break
         continue
-    return vulData
+    for i in tList:
+        i.join()
+    return vulData[:n]
 
 def getCorrectURL(url):
     customReq = urllib2.Request(url)
@@ -89,8 +120,10 @@ def crawl(url, domain, maxurls=100):
     while len(urls) < maxurls:
         print len(urls), len(url_database)
         url = urls.popleft()
-        urls.extend(get_links2(url, domain))
-        urls.append(url)
+        L = get_links2(url, domain)
+        if L is not None:
+            urls.extend(L)
+            urls.append(url)
         print "-------------------------------"
     print "OUTSIDE LOOP:", len(urls), len(url_database)
     return list(urls)[:maxurls+1]
@@ -100,10 +133,16 @@ def get_page(url):
     """Get the text of the web page at the given URL
     return a string containing the content"""
     print "GetPage:", url
-    fd = urlopen(url)
+    try:
+        fd = urlopen(url)
+    except:
+        return None
     content = fd.read()
     fd.close()
-    return content.decode('utf8')
+    try:
+        return content.decode('utf8')
+    except:
+        return content.decode('latin-1')
 
 def get_links2(url, domain):
     """Scan the text for http URLs and return a set
@@ -111,6 +150,9 @@ def get_links2(url, domain):
     global url_database
     links = []
     text = get_page(url)
+    if text is None and url in url_database:
+        url_database.remove(url)
+        return []
     soup = BeautifulSoup(text)
     for link in soup.find_all('a'):
         if 'href' in link.attrs:
