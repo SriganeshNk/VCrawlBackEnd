@@ -115,7 +115,8 @@ def get_page(url):
     return a string containing the content"""
     print "GetPage:", url
     try:
-        fd = urlopen(url)
+        req = urllib2.Request(url, headers={'User-Agent' : "Magic Browser"})
+        fd = urlopen(req)
     except:
         return None
     content = fd.read()
