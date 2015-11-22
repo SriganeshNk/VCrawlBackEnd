@@ -2,7 +2,6 @@ from flask import jsonify, request
 
 from . import api
 import final_crawler as fc
-import urllib2
 
 @api.route('/crawls', methods=['GET'])
 def get_crawls():
