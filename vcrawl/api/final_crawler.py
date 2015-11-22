@@ -65,8 +65,7 @@ def analyseMain(crawledUrls):
     if n >= 1000:
         numThread = 15
     share = n/numThread
-    tList = getThreads(n, numThread, share, crawledUrls)
-    """
+    #tList = getThreads(n, numThread, share, crawledUrls)
     for i in range(numThread+1):
         start = share*i
         end = share*(i+1) if share*(i+1) < n else n
@@ -78,9 +77,8 @@ def analyseMain(crawledUrls):
             return vulData
         if end >= n:
             break
-    """
-    for i in tList:
-        i.start()
+    #for i in tList:
+    #    i.start()
     temp = len(vulData)
     while len(vulData) < n:
         time.sleep(2) #To make the thread sleep for 2 seconds
@@ -89,8 +87,8 @@ def analyseMain(crawledUrls):
         else:
             break
         continue
-    for i in tList:
-        i.join()
+    #for i in tList:
+    #    i.join()
     return vulData[:n]
 
 def getCorrectURL(url):
@@ -112,7 +110,8 @@ def findDomain(url):
 
 def crawl(url, domain, maxurls=100):
     global url_database
-    url_database = {url}
+    url_database = set()
+    url_database.add(url)
     """Starting from this URL, crawl the web until
     you have collected maxurls URLS, then return them
     as a set"""
