@@ -21,41 +21,23 @@ domain = None
 lock = threading.RLock()
 
 
-class Analyse(threading.Thread):
-    def __init__(self, threadID, name, urls):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.urls = urls
-
-    def run(self):
-        print "Starting ", self.threadID
-        analyse(self.name, self.urls)
-        print "Exiting ", self.threadID
-
 def analyse(thName, urls):
     #h = httplib2.Http(disable_ssl_certificate_validation=True)
     global vulData
     ans = AnalyseHeader()
     for u in urls:
+        output = {"url": u}
         try:
             r = requests.get(u, verify=True)
-            output = {"url": u}
             output['data'] = ans.checkURLS(r.headers, r.text)
-            lock.acquire()
-            vulData.append(output)
-            lock.release()
         except Exception as e:
             print "SOME exception", e
             pass
+        if 'data' in output:
+            lock.acquire()
+            vulData.append(output)
+            lock.release()
 
-def getThreads(n, num, share, urls):
-    threadList = []
-    for i in range(num):
-        start = share*i
-        end = share*(i+1) if share*(i+1) < n else n
-        threadList.append(Analyse(i,str(i), urls[start:end]))
-    return threadList
 
 def analyseMain(crawledUrls):
     numThread = 5
@@ -65,20 +47,26 @@ def analyseMain(crawledUrls):
     if n >= 1000:
         numThread = 15
     share = n/numThread
+<<<<<<< HEAD
     #tList = getThreads(n, numThread, share, crawledUrls)
+=======
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     for i in range(numThread+1):
         start = share*i
         end = share*(i+1) if share*(i+1) < n else n
         try:
             print "Started Thread", i, start, end
-            thread.start_new_thread(analyse, (str(i), urls[start:end]))
+            thread.start_new_thread(analyse, (str(i), crawledUrls[start:end]))
         except Exception as e:
-            print "Exception with starting Threads" + e
+            print "Exception with starting Threads", e
             return vulData
         if end >= n:
             break
+<<<<<<< HEAD
     #for i in tList:
     #    i.start()
+=======
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     temp = len(vulData)
     while len(vulData) < n:
         time.sleep(2) #To make the thread sleep for 2 seconds
@@ -87,16 +75,25 @@ def analyseMain(crawledUrls):
         else:
             break
         continue
+<<<<<<< HEAD
     #for i in tList:
     #    i.join()
+=======
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     return vulData[:n]
 
+
 def getCorrectURL(url):
-    customReq = urllib2.Request(url)
-    customRes = urllib2.urlopen(customReq)
-    path = customRes.geturl()
-    print "RETURNED URL", path
-    return path
+    print "URL", url
+    try:
+        customReq = urllib2.Request(url)
+        customRes = urllib2.urlopen(customReq)
+        path = customRes.geturl()
+        print "RETURNED URL", path
+        return path
+    except:
+        return url
+
 
 def findDomain(url):
     website = url.split("//")
@@ -110,8 +107,12 @@ def findDomain(url):
 
 def crawl(url, domain, maxurls=100):
     global url_database
+<<<<<<< HEAD
     url_database = set()
     url_database.add(url)
+=======
+    url_database = set([url])
+>>>>>>> f0d36a5e627b66d67c39250485ae920b35713064
     """Starting from this URL, crawl the web until
     you have collected maxurls URLS, then return them
     as a set"""
@@ -152,7 +153,7 @@ def get_links2(url, domain):
     if text is None and url in url_database:
         url_database.remove(url)
         return []
-    soup = BeautifulSoup(text)
+    soup = BeautifulSoup(text, "html5lib")
     for link in soup.find_all('a'):
         if 'href' in link.attrs:
             newurl = link.attrs['href']
