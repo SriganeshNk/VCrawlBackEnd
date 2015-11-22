@@ -134,7 +134,7 @@ def get_links2(url, domain):
     if text is None and url in url_database:
         url_database.remove(url)
         return []
-    soup = BeautifulSoup(text, "html5lib")
+    soup = BeautifulSoup(text, "lxml")
     for link in soup.find_all('a'):
         if 'href' in link.attrs:
             newurl = link.attrs['href']
