@@ -91,12 +91,12 @@ class AnalyseHeader(object):
         nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce']
         for each in self.CSP:
             if each in header:
-                if 'nonce' in header[each]:
+                if self.CSRF in header[each]:
                     return True
         soup = BeautifulSoup(content, "lxml")
         for form in soup.find_all('form'):
             for formAttrs in form.attrs:
-                if 'nonce' in formAttrs:
+                if self.CSRF in formAttrs:
                     return True
             for inputTag in form.find_all('input'):
                 if 'type' in inputTag.attrs and 'hidden' in inputTag.attrs['type']:
