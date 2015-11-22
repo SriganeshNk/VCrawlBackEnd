@@ -28,8 +28,6 @@ def create_crawl():
     path = fc.getCorrectURL(path)
     print "Correct PAth is:", path, domain, page
     urls = fc.crawl(path, domain, int(page))
-    for i in urls:
-        print i
     print "Length of URLS:", len(urls)
     if len(urls) > int(page):
         urls = urls[:int(page)]
