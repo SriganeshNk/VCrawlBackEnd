@@ -2,7 +2,7 @@
 
 # Based on the above website information about http headers
 
-# Nonces ---> need to check forms for nonce id's, requires parsing the content and identifying nonceIDS
+from bs4 import BeautifulSoup
 
 class AnalyseHeader(object):
     def __init__(self):
@@ -17,7 +17,7 @@ class AnalyseHeader(object):
         csp_map = {'implemented' : False}
 
         for csp in self.CSP:
-            if self.CSP in header:
+            if csp in header:
                 csp_map['implemented'] = True
                 for directive in csp_directives:
                     csp_map[directive] = False
