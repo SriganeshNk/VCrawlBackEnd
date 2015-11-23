@@ -26,11 +26,19 @@ def analyse(thName, urls):
     for u in urls:
         output = {"url": u}
         try:
-            r = requests.get(u, verify=True)
-            output['data'] = ans.checkURLS(r.headers, r.text)
+            r1 = requests.get(u, verify=True)
+            r2 = requests.get(u, verify=True)
+            output['data'] = ans.checkURLS(r1.headers, r1.text, r2.text)
+            output['data']['exception'] = False
         except Exception as e:
-            print "SOME exception", e
-            pass
+            try:
+                print "SOME exception", e
+                req1 = requests.get(u, verify=False)
+                req2 = requests.get(u, verify=False)
+                output['data'] = ans.checkURLS(req1.headers, req1.text, req2.text)
+                output['data']['exception'] = True
+            except:
+                pass
         if 'data' in output:
             lock.acquire()
             vulData.append(output)
@@ -58,7 +66,7 @@ def analyseMain(crawledUrls):
             break
     temp = len(vulData)
     while len(vulData) < n:
-        time.sleep(2) #To make the thread sleep for 2 seconds
+        time.sleep(5) #To make the thread sleep for 2 seconds
         if temp != len(vulData):
             temp = len(vulData)
         else:
@@ -91,8 +99,6 @@ def findDomain(url):
 
 def crawl(url, domain, maxurls=100):
     global url_database
-    url_database = set()
-    url_database.add(url)
     url_database = set([url])
     """Starting from this URL, crawl the web until
     you have collected maxurls URLS, then return them
