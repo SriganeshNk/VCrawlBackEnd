@@ -85,45 +85,69 @@ class AnalyseHeader(object):
                         xss_map['mode'] = 'sanitize'
         return xss_map
 
-    def checkCSRF(self, header, content):
-        nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce']
+    def checkCSRF(self, header, content1, content2):
+        nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce', 'data-form-nonce']
         csrf_map = {'implemented' : False}
-	for each in self.CSP:
+        for each in self.CSP:
             if each in header and self.CSRF in header[each]:
-		csrf_map['implemented'] = True
-		return csrf_map
-        soup = BeautifulSoup(content, "lxml")
-        for form in soup.find_all('form'):
-            for formAttrs in form.attrs:
-                if self.CSRF in formAttrs:
-                	csrf_map['implemented'] = True
-			return csrf_map
-        	   
-            for inputTag in form.find_all('input'):
-                if 'type' in inputTag.attrs and 'hidden' in inputTag.attrs['type']:
-                    if 'name' in inputTag.attrs and inputTag.attrs['name'] in nonce_fields:
-                	csrf_map['implemented'] = True
-			return csrf_map
-        
+		        csrf_map['implemented'] = True
+		        return csrf_map
+        soup1 = BeautifulSoup(content1, "lxml")
+        soup2 = BeautifulSoup(content2, "lxml")
+        forms1 = soup1.find_all('form')
+        forms2 = soup2.find_all('form')
+        form1 = 0
+        form2 = 0
+        #print "forms1", forms1, len(forms1)
+        #print "forms2", forms2, len(forms2)
+	
+		
+        while form1 < len(forms1) and form2 < len(forms2):
+    	    form1_attrs = forms1[form1].attrs;
+    	    form2_attrs = forms2[form2].attrs;
+	    #print "form1_attrs ", form1_attrs
+	    #print "form2_attrs ", form2_attrs
+    	    for form_attr in form1_attrs:
+        		if self.CSRF in form_attr:
+        		    #print "Form tag nonce detected : ", form_attr, form1_attrs[form_attr], form2_attrs[form_attr]
+        		    if form1_attrs[form_attr] != form2_attrs[form_attr]:
+        			    csrf_map['implemented'] = True
+        			    return csrf_map
+
+    	    form1_inputtags = forms1[form1].find_all('input')
+    	    form2_inputtags = forms2[form2].find_all('input')
+	    #print "form1 input tags ", form1_inputtags, len(form1_inputtags)
+	    #print "form2 input tags ", form2_inputtags, len(form2_inputtags)
+    	    assert len(form1_inputtags) == len(form2_inputtags), "The two forms have different number of input tags"
+    	    for inputtag in range(len(form1_inputtags)):
+                form1_inputtag_attrs = form1_inputtags[inputtag].attrs
+                form2_inputtag_attrs = form2_inputtags[inputtag].attrs
+                if 'type' in form1_inputtag_attrs and form1_inputtag_attrs['type']=='hidden' and 'type' in form2_inputtag_attrs and form2_inputtag_attrs['type']=='hidden':
+        			if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'] in nonce_fields and 'name' in form2_inputtag_attrs and form2_inputtag_attrs['name'] in nonce_fields:
+					#print "Input tag nonce detected ", form1_inputtag_attrs['value'], form2_inputtag_attrs['value']
+        				if form1_inputtag_attrs['value'] != form2_inputtag_attrs['value']:
+        					csrf_map['implemented'] = True
+        					return csrf_map
+    	    form1 = form1 + 1
+    	    form2 = form2 + 1
         return csrf_map
 
-
-    def checkURLS(self, header, content):
+    def checkURLS(self, header, content1, content2):
         vul = {}
         vul['csp'] = self.checkCSP(header)
-        vul['csrf'] = self.checkCSRF(header, content)
+        vul['csrf'] = self.checkCSRF(header, content1, content2)
         vul['hsts'] = self.checkHSTS(header)
         vul['xframe'] = self.checkXFrame(header)
         vul['xss'] = self.checkXSS(header)
         return vul
-
 
 '''
 a = AnalyseHeader()
 import httplib2
 import json
 h = httplib2.Http(".cache")
-(header, content) = h.request("http://github.com/integrations/gitter", "GET")
-print json.dumps(header, indent=4, sort_keys=True)
-print json.dumps(a.checkURLS(header, content), indent=4, sort_keys=True)
+(header1, content1) = h.request("http://github.com", "GET")
+(header2, content2) = h.request("http://github.com", "GET")
+print json.dumps(header1, indent=4, sort_keys=True)
+print json.dumps(a.checkURLS(header1, content1, content2), indent=4, sort_keys=True)
 '''
