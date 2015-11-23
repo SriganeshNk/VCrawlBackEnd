@@ -118,7 +118,7 @@ class AnalyseHeader(object):
         return vul
 
 
-
+'''
 a = AnalyseHeader()
 import httplib2
 import json
@@ -126,4 +126,4 @@ h = httplib2.Http(".cache")
 (header, content) = h.request("http://github.com/integrations/gitter", "GET")
 print json.dumps(header, indent=4, sort_keys=True)
 print json.dumps(a.checkURLS(header, content), indent=4, sort_keys=True)
-
+'''
