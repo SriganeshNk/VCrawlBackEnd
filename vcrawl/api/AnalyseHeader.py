@@ -109,7 +109,6 @@ class AnalyseHeader(object):
 
     	    form1_inputtags = forms1[form1].find_all('input')
     	    form2_inputtags = forms2[form2].find_all('input')
-    	    assert len(form1_inputtags) == len(form2_inputtags), "The two forms have different number of input tags"
     	    for inputtag in range(len(form1_inputtags)):
                 form1_inputtag_attrs = form1_inputtags[inputtag].attrs
                 form2_inputtag_attrs = form2_inputtags[inputtag].attrs
