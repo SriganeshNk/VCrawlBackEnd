@@ -66,7 +66,7 @@ def analyseMain(crawledUrls):
             break
     temp = len(vulData)
     while len(vulData) < n:
-        time.sleep(8) #To make the thread sleep for 2 seconds
+        time.sleep(10) #To make the thread sleep for 2 seconds
         if temp != len(vulData):
             temp = len(vulData)
         else:
