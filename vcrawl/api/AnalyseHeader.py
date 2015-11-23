@@ -98,16 +98,11 @@ class AnalyseHeader(object):
         forms2 = soup2.find_all('form')
         form1 = 0
         form2 = 0
-        #print "forms1", forms1, len(forms1)
-        #print "forms2", forms2, len(forms2)
         while form1 < len(forms1) and form2 < len(forms2):
-    	    form1_attrs = forms1[form1].attrs;
-    	    form2_attrs = forms2[form2].attrs;
-	    #print "form1_attrs ", form1_attrs
-	    #print "form2_attrs ", form2_attrs
+    	    form1_attrs = forms1[form1].attrs
+    	    form2_attrs = forms2[form2].attrs
     	    for form_attr in form1_attrs:
         		if self.CSRF in form_attr:
-        		    #print "Form tag nonce detected : ", form_attr, form1_attrs[form_attr], form2_attrs[form_attr]
         		    if form1_attrs[form_attr] != form2_attrs[form_attr]:
         			    csrf_map['implemented'] = True
         			    return csrf_map
