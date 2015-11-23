@@ -1,7 +1,7 @@
 import subprocess
 import ast
 import final_crawler as fc
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 app = Flask(__name__)
 
 
@@ -9,8 +9,10 @@ app = Flask(__name__)
 def create_crawl():
     path = request.form.get("url")
     page = request.form.get("pages")
-    domain = fc.findDomain(path)
     path = fc.getCorrectURL(path)
+    if path == None:
+        abort(404)
+    domain = fc.findDomain(path)
     urls = fc.crawl(path, domain, int(page))
     if len(urls) > int(page):
         urls = urls[:int(page)]

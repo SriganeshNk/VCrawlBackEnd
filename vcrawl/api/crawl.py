@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, abort
 
 from . import api
 import final_crawler as fc
@@ -23,8 +23,10 @@ def create_crawl():
     print "POST CALL"
     path = request.form.get("url")
     page = request.form.get("pages")
-    domain = fc.findDomain(path)
     path = fc.getCorrectURL(path)
+    if path == None:
+        abort(404)
+    domain = fc.findDomain(path)
     print "Correct PAth is:", path, domain, page
     urls = fc.crawl(path, domain, int(page))
     print "Length of URLS:", len(urls)

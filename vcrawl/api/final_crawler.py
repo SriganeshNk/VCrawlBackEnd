@@ -70,13 +70,13 @@ def analyseMain(crawledUrls):
 def getCorrectURL(url):
     print "URL", url
     try:
-        customReq = urllib2.Request(url)
-        customRes = urllib2.urlopen(customReq)
+        req = urllib2.Request(url, headers={'User-Agent' : "Magic Browser"})
+        customRes = urlopen(req)
         path = customRes.geturl()
         print "RETURNED URL", path
         return path
-    except:
-        return url
+    except Exception as e:
+        return None
 
 
 def findDomain(url):
@@ -84,7 +84,7 @@ def findDomain(url):
     print "WEBSITE", website
     possibleDomain = website[1].split(".")
     n = len(possibleDomain)
-    domain = possibleDomain[n-2] + "." + possibleDomain[n-1]
+    domain = possibleDomain[n-2] + "." + possibleDomain[n-1].split("/")[0]
     print "Include Domains:", domain
     return domain
 
