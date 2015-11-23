@@ -15,7 +15,6 @@ class AnalyseHeader(object):
         self.HSTS = "strict-transport-security"
 
     def checkCSP(self, header):
-        #print "CSP"
         csp_directives = ['base-uri', 'child-src', 'connect-src', 'default-src', 'font-src', 'form-action', 'frame-ancestors', 'frame-src', 'img-src', 'media-src', 'object-src', 'plugin-types', 'report-uri','script-src', 'style-src', 'upgrade-insecure-requests']
         csp_map = {'implemented' : False}
         for csp in self.CSP:
@@ -32,7 +31,6 @@ class AnalyseHeader(object):
         return csp_map
 
     def checkHSTS(self, header):
-        #print "hsts"
         hsts_directives = ['max-age', 'includeSubdomains', 'preload']
         hsts_map = {'implemented' : False}
         if self.HSTS in header:
@@ -52,7 +50,6 @@ class AnalyseHeader(object):
         return hsts_map
 
     def checkXFrame(self, header):
-        #print "xframe"
         xframe_modes = ['deny', 'sameorigin', 'allow-from']
         xframe_map = {'implemented' : False}
         for xframe in self.XFRAME:
@@ -70,7 +67,6 @@ class AnalyseHeader(object):
         return xframe_map
 
     def checkXSS(self, header):
-        #print "xss"
         xss_directives = ['mode']
         xss_map = {'implemented' : False}
         if self.XSS in header:
@@ -91,19 +87,25 @@ class AnalyseHeader(object):
 
     def checkCSRF(self, header, content):
         nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce']
-        for each in self.CSP:
+        csrf_map = {'implemented' : False}
+	for each in self.CSP:
             if each in header and self.CSRF in header[each]:
-                return True
+		csrf_map['implemented'] = True
+		return csrf_map
         soup = BeautifulSoup(content, "lxml")
         for form in soup.find_all('form'):
             for formAttrs in form.attrs:
                 if self.CSRF in formAttrs:
-                    return True
+                	csrf_map['implemented'] = True
+			return csrf_map
+        	   
             for inputTag in form.find_all('input'):
                 if 'type' in inputTag.attrs and 'hidden' in inputTag.attrs['type']:
                     if 'name' in inputTag.attrs and inputTag.attrs['name'] in nonce_fields:
-                        return True
-        return False
+                	csrf_map['implemented'] = True
+			return csrf_map
+        
+        return csrf_map
 
 
     def checkURLS(self, header, content):
@@ -116,7 +118,7 @@ class AnalyseHeader(object):
         return vul
 
 
-"""
+
 a = AnalyseHeader()
 import httplib2
 import json
@@ -124,4 +126,4 @@ h = httplib2.Http(".cache")
 (header, content) = h.request("http://github.com/integrations/gitter", "GET")
 print json.dumps(header, indent=4, sort_keys=True)
 print json.dumps(a.checkURLS(header, content), indent=4, sort_keys=True)
-"""
+
