@@ -115,7 +115,6 @@ class AnalyseHeader(object):
                 form2_inputtag_attrs = form2_inputtags[inputtag].attrs
                 if 'type' in form1_inputtag_attrs and form1_inputtag_attrs['type']=='hidden':
                     if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'].lower() in nonce_fields:
-                        print(form1_inputtag_attrs['name'].lower())
                         if form1_inputtag_attrs.get('value') != form2_inputtag_attrs.get('value'):
                             csrf_map['implemented'] = True
                             return csrf_map
