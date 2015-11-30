@@ -13,6 +13,7 @@ class AnalyseHeader(object):
         self.XSS = "x-xss-protection"
         self.CSRF = "nonce"
         self.HSTS = "strict-transport-security"
+        self.Cookie = "set-cookie"
 
     def checkCSP(self, header):
         csp_directives = ['base-uri', 'child-src', 'connect-src', 'default-src', 'font-src', 'form-action', 'frame-ancestors', 'frame-src', 'img-src', 'media-src', 'object-src', 'plugin-types', 'report-uri','script-src', 'style-src', 'upgrade-insecure-requests']
@@ -57,9 +58,8 @@ class AnalyseHeader(object):
                 xframe_map['implemented'] = True
                 policy_string = header[xframe]
                 policy_list = policy_string.split(';')
-                assert len(policy_list) == 1, "Can specify only one XFrame mode!"
                 policy_strings = policy_list[0].split(' ')
-                if policy_strings[0] in xframe_modes:
+                if policy_strings[0].lower() in xframe_modes:
                     xframe_map['mode'] = policy_strings[0]
                 if policy_strings[0] == 'allow-from':
                     assert len(policy_strings) == 2, "Need an external framing page URI for 'allow-from' framing mode"
@@ -83,6 +83,7 @@ class AnalyseHeader(object):
                         xss_map['mode'] = 'block'
                     else:
                         xss_map['mode'] = 'sanitize'
+        self.checkSecureCookie(header, xss_map)
         return xss_map
 
     def checkCSRF(self, header, content1, content2):
@@ -90,8 +91,8 @@ class AnalyseHeader(object):
         csrf_map = {'implemented' : False}
         for each in self.CSP:
             if each in header and self.CSRF in header[each]:
-		        csrf_map['implemented'] = True
-		        return csrf_map
+                csrf_map['implemented'] = True
+                return csrf_map
         soup1 = BeautifulSoup(content1, "lxml")
         soup2 = BeautifulSoup(content2, "lxml")
         forms1 = soup1.find_all('form')
@@ -99,28 +100,38 @@ class AnalyseHeader(object):
         form1 = 0
         form2 = 0
         while form1 < len(forms1) and form2 < len(forms2):
-    	    form1_attrs = forms1[form1].attrs
-    	    form2_attrs = forms2[form2].attrs
-    	    for form_attr in form1_attrs:
-        		if self.CSRF in form_attr:
-        		    if form1_attrs[form_attr] != form2_attrs[form_attr]:
-        			    csrf_map['implemented'] = True
-        			    return csrf_map
+            form1_attrs = forms1[form1].attrs
+            form2_attrs = forms2[form2].attrs
+            for form_attr in form1_attrs:
+                if self.CSRF in form_attr:
+                    if form1_attrs[form_attr] != form2_attrs[form_attr]:
+                        csrf_map['implemented'] = True
+                        return csrf_map
 
-    	    form1_inputtags = forms1[form1].find_all('input')
-    	    form2_inputtags = forms2[form2].find_all('input')
-    	    for inputtag in range(len(form1_inputtags)):
+            form1_inputtags = forms1[form1].find_all('input')
+            form2_inputtags = forms2[form2].find_all('input')
+            for inputtag in range(len(form1_inputtags)):
                 form1_inputtag_attrs = form1_inputtags[inputtag].attrs
                 form2_inputtag_attrs = form2_inputtags[inputtag].attrs
                 if 'type' in form1_inputtag_attrs and form1_inputtag_attrs['type']=='hidden' and 'type' in form2_inputtag_attrs and form2_inputtag_attrs['type']=='hidden':
-        			if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'] in nonce_fields and 'name' in form2_inputtag_attrs and form2_inputtag_attrs['name'] in nonce_fields:
-					#print "Input tag nonce detected ", form1_inputtag_attrs['value'], form2_inputtag_attrs['value']
-        				if form1_inputtag_attrs['value'] != form2_inputtag_attrs['value']:
-        					csrf_map['implemented'] = True
-        					return csrf_map
-    	    form1 = form1 + 1
-    	    form2 = form2 + 1
+                    if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'] in nonce_fields and 'name' in form2_inputtag_attrs and form2_inputtag_attrs['name'] in nonce_fields:
+                        #print "Input tag nonce detected ", form1_inputtag_attrs['value'], form2_inputtag_attrs['value']
+                        if form1_inputtag_attrs['value'] != form2_inputtag_attrs['value']:
+                            csrf_map['implemented'] = True
+                            return csrf_map
+            form1 = form1 + 1
+            form2 = form2 + 1
         return csrf_map
+
+    def checkSecureCookie(self, header, xss_map):
+        xss_map['httpOnly'] = False
+        xss_map['secure'] = False
+        if self.Cookie in header:
+            compString = header[self.Cookie].lower()
+            if 'secure' in compString:
+                xss_map['secure'] = True
+            if 'httponly' in compString:
+                xss_map['httpOnly'] = True
 
     def checkURLS(self, header, content1, content2):
         vul = {}
@@ -131,13 +142,13 @@ class AnalyseHeader(object):
         vul['xss'] = self.checkXSS(header)
         return vul
 
-'''
+
 a = AnalyseHeader()
 import httplib2
 import json
 h = httplib2.Http(".cache")
-(header1, content1) = h.request("http://github.com", "GET")
-(header2, content2) = h.request("http://github.com", "GET")
+(header1, content1) = h.request("https://www.google.com", "GET")
+(header2, content2) = h.request("https://www.google.com", "GET")
 print json.dumps(header1, indent=4, sort_keys=True)
 print json.dumps(a.checkURLS(header1, content1, content2), indent=4, sort_keys=True)
-'''
+
