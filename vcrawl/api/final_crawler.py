@@ -21,9 +21,9 @@ def analyse(l, st, urls):
     global vulData
     count = st
     ans = AnalyseHeader()
-    print count
+    #print count
     for u in urls:
-        print st, count, u
+        #print st, count, u
         output = {"url": u}
         try:
             r1 = requests.get(u, verify=True)
@@ -35,7 +35,7 @@ def analyse(l, st, urls):
             output['data']['exception'] = False
         except Exception as e:
             try:
-                print "SOME exception", e
+                #print "SOME exception", e
                 req1 = requests.get(u, verify=False)
                 req2 = requests.get(u, verify=False)
                 output['data'] = ans.checkURLS(req1.headers, req1.text, req2.text)
@@ -47,7 +47,7 @@ def analyse(l, st, urls):
             vulData[count] = output
             l.release()
             count += 1
-    print count
+    #print count
 
 def analyseMain(crawledUrls):
     numThread = 5
@@ -80,7 +80,6 @@ def analyseMain(crawledUrls):
         p.join()
     print "Finished"
     return vulData[:n]
-
 
 def getCorrectURL(url):
     print "URL", url
