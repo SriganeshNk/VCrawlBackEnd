@@ -94,6 +94,8 @@ class AnalyseHeader(object):
                 csrf_map['implemented'] = True
                 return csrf_map
         # Check for nonce in the forms
+        if content1 is None or content2 is None:
+            return csrf_map
         soup1 = BeautifulSoup(content1, "lxml")
         soup2 = BeautifulSoup(content2, "lxml")
         forms1 = soup1.find_all('form')
@@ -139,12 +141,27 @@ class AnalyseHeader(object):
         vul['xss'] = self.checkXSS(header)
         return vul
 
-
+"""
 a = AnalyseHeader()
-import httplib2
+import requests
 import json
-h = httplib2.Http(".cache")
-(header1, content1) = h.request("https://www.airbnb.com", "GET")
-(header2, content2) = h.request("https://www.airbnb.com", "GET")
+#h = httplib2.Http(".cache")
+req1 = requests.get("https://central.github.com/mac/latest")
+req2 = requests.get("https://central.github.com/mac/latest")
+print req1.headers
+print "--------------"
+print req2.headers
+print "--------------"
+Text1, Text2 = None, None
+if req1.headers['Content-Type'] == 'application/zip':
+    Text1 = req1.content.decode('utf-8')
+print Text1
+print "--------------"
+if req2.headers['Content-Type'] == 'application/zip':
+    Text2 = req1.content.decode('utf-8')
+print Text2
+(header1, content1) = (req1.headers, Text1)
+(header2, content2) = (req2.headers, Text2)
 print json.dumps(header1, indent=4, sort_keys=True)
 print json.dumps(a.checkURLS(header1, content1, content2), indent=4, sort_keys=True)
+"""
