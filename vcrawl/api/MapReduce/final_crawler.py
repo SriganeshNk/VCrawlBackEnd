@@ -3,9 +3,7 @@ from urllib2 import urlopen
 from bs4 import BeautifulSoup
 from collections import deque
 import requests
-import thread
-import threading
-import time
+from multiprocessing import Process, Manager, RLock
 import urllib2
 from AnalyseHeader import AnalyseHeader
 import urllib3.contrib.pyopenssl
@@ -15,24 +13,29 @@ bsoup = None
 crawled_links = 1
 max_crawl = None
 url_database = set()
-vulData = []
+man = Manager()
+vulData = man.list()
 domain = None
-lock = threading.RLock()
 
-
-def analyse(thName, urls):
+def analyse(l, st, urls):
     global vulData
+    count = st
     ans = AnalyseHeader()
+    #print count
     for u in urls:
+        #print st, count, u
         output = {"url": u}
         try:
             r1 = requests.get(u, verify=True)
             r2 = requests.get(u, verify=True)
-            output['data'] = ans.checkURLS(r1.headers, r1.text, r2.text)
+            Text1, Text2 = None, None
+            if 'Content-Type' in r1.headers and r1.headers['Content-Type'] != 'application/zip':
+                Text1, Text2 = r1.text, r2.text
+            output['data'] = ans.checkURLS(r1.headers, Text1, Text2)
             output['data']['exception'] = False
         except Exception as e:
             try:
-                print "SOME exception", e
+                #print "SOME exception", e
                 req1 = requests.get(u, verify=False)
                 req2 = requests.get(u, verify=False)
                 output['data'] = ans.checkURLS(req1.headers, req1.text, req2.text)
@@ -40,40 +43,43 @@ def analyse(thName, urls):
             except:
                 pass
         if 'data' in output:
-            lock.acquire()
-            vulData.append(output)
-            lock.release()
-
+            l.acquire(timeout=5)
+            vulData[count] = output
+            l.release()
+            count += 1
+    #print count
 
 def analyseMain(crawledUrls):
     numThread = 5
     global vulData
-    vulData = []
+    l = RLock()
+    vulData = man.list([0] * len(crawledUrls)) #Array containing the data of crawled URLS
     n = len(crawledUrls)
     if n >= 1000:
         numThread = 15
+    if n <= 5:
+        numThread = 1
+    processes = []
     share = n/numThread
     for i in range(numThread+1):
         start = share*i
         end = share*(i+1) if share*(i+1) < n else n
         try:
-            print "Started Thread", i, start, end
-            thread.start_new_thread(analyse, (str(i), crawledUrls[start:end]))
+            print "Started Process", i, start, end
+            p = Process(target = analyse, args=(l, start, crawledUrls[start:end]))
+            processes.append(p)
         except Exception as e:
             print "Exception with starting Threads", e
             return vulData
         if end >= n:
             break
-    temp = len(vulData)
-    while len(vulData) < n:
-        time.sleep(10) #To make the thread sleep for 2 seconds
-        if temp != len(vulData):
-            temp = len(vulData)
-        else:
-            break
-        continue
+    for p in processes:
+        p.start()
+    print "DONE starting"
+    for p in processes:
+        p.join()
+    print "Finished"
     return vulData[:n]
-
 
 def getCorrectURL(url):
     print "URL", url
@@ -84,6 +90,7 @@ def getCorrectURL(url):
         print "RETURNED URL", path
         return path
     except Exception as e:
+        print "Exception in getting correct URL", e
         return None
 
 
@@ -104,14 +111,23 @@ def crawl(url, domain, maxurls=100):
     you have collected maxurls URLS, then return them
     as a set"""
     urls = deque([url])
+    temp = len(urls)
+    count = 0
     while len(urls) < maxurls:
         print len(urls), len(url_database)
         url = urls.popleft()
         L = get_links2(url, domain)
         if L is not None:
             urls.extend(L)
-            urls.append(url)
+        urls.append(url)
         print "-------------------------------"
+        if temp == len(urls):
+            count += 1
+        else:
+            count = 0
+            temp = len(urls)
+        if count == 5:
+            return list(urls)
     print "OUTSIDE LOOP:", len(urls), len(url_database)
     return list(urls)
 
