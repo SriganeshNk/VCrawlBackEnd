@@ -18,26 +18,23 @@ def check_vulnerabilities():
 
     # Cleans the HDFS paths and loads the urllists to HDFS
     subprocess.call("./mrstartup.sh", shell=True)
+    
     # Starts the MR job for the urls in the urllist
     subprocess.call("./mrlauncher.sh --input=/user/smullassery/syssec/urllist.txt --output=/user/smullassery/syssec/output", shell=True)
+    
     # Reads the result from MR job
     result = subprocess.Popen(["hdfs", "dfs" ,"-cat", "/user/smullassery/syssec/output/*"], stdout=subprocess.PIPE)
     result_string, error = result.communicate()
     results = result_string.split('\t\n')
-    print("MR successful")
-    print(results)
+    print("Map Reduce job completed")
     final_result = []
     for temp in results:
         if temp:
-            print(temp)
             list1 = ast.literal_eval(temp)
-            print(list1)
             if list1:
                 final_result.extend(list1)
     
     out = final_result
-    print(len(final_result))
-    print(final_result)
     return jsonify(output=out)
 
 if __name__ == '__main__':

@@ -86,16 +86,14 @@ class AnalyseHeader(object):
         return xss_map
 
     def checkCSRF(self, header, content1, content2):
-        nonce_fields = ['token', 'appactiontoken', 'sectok', 'authenticity_token', 'nonce', 'data-form-nonce']
+        nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce', 'data-form-nonce']
         csrf_map = {'implemented' : False}
         # Check for nonce in the header
         for each in self.CSP:
-            if each.lower() in header and self.CSRF in header[each].lower():
+            if each in header and self.CSRF in header[each]:
                 csrf_map['implemented'] = True
                 return csrf_map
         # Check for nonce in the forms
-        if content1 is None or content2 is None:
-            return csrf_map
         soup1 = BeautifulSoup(content1, "lxml")
         soup2 = BeautifulSoup(content2, "lxml")
         forms1 = soup1.find_all('form')
@@ -116,7 +114,7 @@ class AnalyseHeader(object):
                 form1_inputtag_attrs = form1_inputtags[inputtag].attrs
                 form2_inputtag_attrs = form2_inputtags[inputtag].attrs
                 if 'type' in form1_inputtag_attrs and form1_inputtag_attrs['type']=='hidden':
-                    if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'].lower() in nonce_fields:
+                    if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'] in nonce_fields:
                         if form1_inputtag_attrs.get('value') != form2_inputtag_attrs.get('value'):
                             csrf_map['implemented'] = True
                             return csrf_map
@@ -141,31 +139,12 @@ class AnalyseHeader(object):
         vul['xss'] = self.checkXSS(header)
         return vul
 
-"""
->>>>>>> c04c2fc789181ca23a94e035b5235cf20774efbd
+'''
 a = AnalyseHeader()
-import requests
+import httplib2
 import json
-#h = httplib2.Http(".cache")
-req1 = requests.get("https://central.github.com/mac/latest")
-req2 = requests.get("https://central.github.com/mac/latest")
-print req1.headers
-print "--------------"
-print req2.headers
-print "--------------"
-Text1, Text2 = None, None
-if req1.headers['Content-Type'] == 'application/zip':
-    Text1 = req1.content.decode('utf-8')
-print Text1
-print "--------------"
-if req2.headers['Content-Type'] == 'application/zip':
-    Text2 = req1.content.decode('utf-8')
-print Text2
-(header1, content1) = (req1.headers, Text1)
-(header2, content2) = (req2.headers, Text2)
+h = httplib2.Http(".cache")
+(header1, content1) = h.request("https://www.airbnb.com", "GET")
+(header2, content2) = h.request("https://www.airbnb.com", "GET")
 print json.dumps(header1, indent=4, sort_keys=True)
-<<<<<<< HEAD
-print json.dumps(a.checkURLS(header1, content1, content2), indent=4, sort_keys=True)
-print json.dumps(a.checkURLS(header1, content1, content2), indent=4, sort_keys=True)
->>>>>>> c04c2fc789181ca23a94e035b5235cf20774efbd
-"""
+print json.dumps(a.checkURLS(header1, content1, content2), indent=4, sort_keys=True)'''
