@@ -88,38 +88,38 @@ class AnalyseHeader(object):
     def checkCSRF(self, header, content1, content2):
         nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce', 'data-form-nonce']
         csrf_map = {'implemented' : False}
+        # Check for nonce in the header
         for each in self.CSP:
             if each in header and self.CSRF in header[each]:
-		        csrf_map['implemented'] = True
-		        return csrf_map
+                csrf_map['implemented'] = True
+                return csrf_map
+
+        # Check for nonce in the forms
         soup1 = BeautifulSoup(content1, "lxml")
         soup2 = BeautifulSoup(content2, "lxml")
         forms1 = soup1.find_all('form')
         forms2 = soup2.find_all('form')
-        form1 = 0
-        form2 = 0
-        while form1 < len(forms1) and form2 < len(forms2):
+        for form1,form2 in zip(range(len(forms1)), range(len(forms2))):
     	    form1_attrs = forms1[form1].attrs
     	    form2_attrs = forms2[form2].attrs
+            # Check whether form attribute has a nonce and value is differnet for multiple requests
     	    for form_attr in form1_attrs:
-        		if self.CSRF in form_attr:
-        		    if form1_attrs[form_attr] != form2_attrs[form_attr]:
-        			    csrf_map['implemented'] = True
-        			    return csrf_map
+                if self.CSRF in form_attr:
+                    if form1_attrs[form_attr] != form2_attrs[form_attr]:
+                        csrf_map['implemented'] = True
+                        return csrf_map
 
+            # Checks whether input tag has a nonce field and value is different for multiple requests
     	    form1_inputtags = forms1[form1].find_all('input')
     	    form2_inputtags = forms2[form2].find_all('input')
     	    for inputtag in range(len(form1_inputtags)):
                 form1_inputtag_attrs = form1_inputtags[inputtag].attrs
                 form2_inputtag_attrs = form2_inputtags[inputtag].attrs
-                if 'type' in form1_inputtag_attrs and form1_inputtag_attrs['type']=='hidden' and 'type' in form2_inputtag_attrs and form2_inputtag_attrs['type']=='hidden':
-        			if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'] in nonce_fields and 'name' in form2_inputtag_attrs and form2_inputtag_attrs['name'] in nonce_fields:
-					#print "Input tag nonce detected ", form1_inputtag_attrs['value'], form2_inputtag_attrs['value']
-        				if form1_inputtag_attrs['value'] != form2_inputtag_attrs['value']:
-        					csrf_map['implemented'] = True
-        					return csrf_map
-    	    form1 = form1 + 1
-    	    form2 = form2 + 1
+                if 'type' in form1_inputtag_attrs and form1_inputtag_attrs['type']=='hidden':
+                    if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'] in nonce_fields:
+                        if form1_inputtag_attrs.get('value') != form2_inputtag_attrs.get('value'):
+                            csrf_map['implemented'] = True
+                            return csrf_map
         return csrf_map
 
     def checkURLS(self, header, content1, content2):
