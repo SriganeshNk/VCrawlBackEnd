@@ -86,11 +86,11 @@ class AnalyseHeader(object):
         return xss_map
 
     def checkCSRF(self, header, content1, content2):
-        nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce', 'data-form-nonce']
+        nonce_fields = ['token', 'appactiontoken', 'sectok', 'authenticity_token', 'nonce', 'data-form-nonce']
         csrf_map = {'implemented' : False}
         # Check for nonce in the header
         for each in self.CSP:
-            if each in header and self.CSRF in header[each]:
+            if each.lower() in header and self.CSRF in header[each].lower():
                 csrf_map['implemented'] = True
                 return csrf_map
         # Check for nonce in the forms
@@ -114,7 +114,8 @@ class AnalyseHeader(object):
                 form1_inputtag_attrs = form1_inputtags[inputtag].attrs
                 form2_inputtag_attrs = form2_inputtags[inputtag].attrs
                 if 'type' in form1_inputtag_attrs and form1_inputtag_attrs['type']=='hidden':
-                    if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'] in nonce_fields:
+                    if 'name' in form1_inputtag_attrs and form1_inputtag_attrs['name'].lower() in nonce_fields:
+                        print(form1_inputtag_attrs['name'].lower())
                         if form1_inputtag_attrs.get('value') != form2_inputtag_attrs.get('value'):
                             csrf_map['implemented'] = True
                             return csrf_map

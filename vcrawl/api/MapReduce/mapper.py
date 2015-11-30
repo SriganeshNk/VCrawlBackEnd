@@ -94,20 +94,24 @@ class AnalyseHeader(object):
 
     def checkCSRF(self, header, content):
         nonce_fields = ['appActionToken', 'secTok', 'authenticity_token', 'nonce']
+        csrf_map = {'implemented' : False}
         for each in self.CSP:
             if each in header:
                 if 'nonce' in header[each]:
-                    return True
+                    csrf_map['implemented'] = True
+                    return csrf_map
         soup = BeautifulSoup(content)
         for form in soup.find_all('form'):
             for formAttrs in form.attrs:
                 if 'nonce' in formAttrs:
-                    return True
+                    csrf_map['implemented'] = True
+                    return csrf_map
             for inputTag in form.find_all('input'):
                 if 'type' in inputTag.attrs and 'hidden' in inputTag.attrs['type']:
                     if 'name' in inputTag.attrs and inputTag.attrs['name'] in nonce_fields:
-                        return True
-        return False
+                         csrf_map['implemented'] = True
+                         return csrf_map
+        return csrf_map
 
     def checkURLS(self, header, content):
         vul = {}
