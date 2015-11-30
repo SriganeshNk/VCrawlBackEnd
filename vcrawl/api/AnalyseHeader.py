@@ -32,7 +32,7 @@ class AnalyseHeader(object):
         return csp_map
 
     def checkHSTS(self, header):
-        hsts_directives = ['max-age', 'includeSubdomains', 'preload']
+        hsts_directives = ['max-age', 'includesubdomains', 'preload']
         hsts_map = {'implemented' : False}
         if self.HSTS in header:
             hsts_map['implemented'] = True
@@ -42,12 +42,11 @@ class AnalyseHeader(object):
             policy_list = policy_string.split(';')
             for policy in policy_list:
                 policy_strings = policy.strip().split('=')
-                #print policy, policy_strings
-                if policy_strings[0] in hsts_directives:
-                    if policy_strings[0] == hsts_directives[0]:
-                        hsts_map[policy_strings[0]] = policy_strings[1]
+                if policy_strings[0].lower() in hsts_directives:
+                    if policy_strings[0].lower() == hsts_directives[0]:
+                        hsts_map[policy_strings[0].lower()] = policy_strings[1].lower()
                     else:
-                        hsts_map[policy_strings[0]] = True
+                        hsts_map[policy_strings[0].lower()] = True
         return hsts_map
 
     def checkXFrame(self, header):
@@ -60,7 +59,7 @@ class AnalyseHeader(object):
                 policy_list = policy_string.split(';')
                 policy_strings = policy_list[0].split(' ')
                 if policy_strings[0].lower() in xframe_modes:
-                    xframe_map['mode'] = policy_strings[0]
+                    xframe_map['mode'] = policy_strings[0].lower()
                 if policy_strings[0] == 'allow-from':
                     assert len(policy_strings) == 2, "Need an external framing page URI for 'allow-from' framing mode"
                     xframe_map['framing_page_uri'] = policy_strings[1]
@@ -140,13 +139,12 @@ class AnalyseHeader(object):
         vul['xss'] = self.checkXSS(header)
         return vul
 
-"""
+
 a = AnalyseHeader()
 import httplib2
 import json
 h = httplib2.Http(".cache")
-(header1, content1) = h.request("https://www.google.com", "GET")
-(header2, content2) = h.request("https://www.google.com", "GET")
+(header1, content1) = h.request("https://www.airbnb.com", "GET")
+(header2, content2) = h.request("https://www.airbnb.com", "GET")
 print json.dumps(header1, indent=4, sort_keys=True)
 print json.dumps(a.checkURLS(header1, content1, content2), indent=4, sort_keys=True)
-"""
