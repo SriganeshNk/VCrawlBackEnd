@@ -47,7 +47,6 @@ class AnalyseHeader(object):
             policy_list = policy_string.split(';')
             for policy in policy_list:
                 policy_strings = policy.strip().split('=')
-                #print policy, policy_strings
                 if policy_strings[0] in hsts_directives:
                     if policy_strings[0] == hsts_directives[0]:
                         hsts_map[policy_strings[0]] = policy_strings[1]
